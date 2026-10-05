@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      DATABASE_PATH: /data/fwnet.sqlite
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+    volumes:
+      - fwnet-data:/data
+    restart: unless-stopped
+
+volumes:
+  fwnet-data:
