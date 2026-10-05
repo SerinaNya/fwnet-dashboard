@@ -4,3 +4,5 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   msw: false
+
+registry: https://registry.npmjs.org/
