@@ -164,7 +164,7 @@ export function AsnsManager() {
       ? createAsn({
           asn,
           ...editableFields,
-          updatedAt: new Date().toISOString(),
+          updatedAt: Date.now(),
         })
       : editingAsn
         ? saveAsn({ ...editingAsn, ...editableFields })

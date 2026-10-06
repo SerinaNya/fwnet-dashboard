@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import {
   columnFilteringFeature,
   columnVisibilityFeature,
@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { AsnRecord, Maintainer, RoaRecord } from "@/lib/network-data"
+import { compareRouteCidrs } from "@/lib/route-sort"
 
 const features = tableFeatures({
   columnFilteringFeature,
@@ -46,10 +47,33 @@ const features = tableFeatures({
 
 const columnHelper = createColumnHelper<typeof features, RoaRecord>()
 
-function formatUpdatedAt(value: string) {
+const subscribeToHydration = () => () => {}
+const getClientHydration = () => true
+const getServerHydration = () => false
+
+function formatUpdatedAt(value: number, useLocalTime: boolean) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ""
-  return `${date.toISOString().slice(0, 10)} ${date.toISOString().slice(11, 16)}`
+
+  const year = useLocalTime ? date.getFullYear() : date.getUTCFullYear()
+  const month = (useLocalTime ? date.getMonth() : date.getUTCMonth()) + 1
+  const day = useLocalTime ? date.getDate() : date.getUTCDate()
+  const hours = useLocalTime ? date.getHours() : date.getUTCHours()
+  const minutes = useLocalTime ? date.getMinutes() : date.getUTCMinutes()
+  const pad = (part: number) => String(part).padStart(2, "0")
+
+  return `${year}-${pad(month)}-${pad(day)} ${pad(hours)}:${pad(minutes)}`
+}
+
+function fullLocalDateTime(value: number) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return date.toLocaleString(undefined, { dateStyle: "full", timeStyle: "long" })
+}
+
+function isoDateTime(value: number) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString()
 }
 
 function location(record: RoaRecord) {
@@ -86,6 +110,11 @@ export function RoaDataTable({
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [query, setQuery] = useState("")
+  const hasHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydration,
+    getServerHydration
+  )
   const asnByNumber = new Map(asns.map((asn) => [asn.asn, asn] as const))
   const familyData = data.filter((record) => {
     if (family === "all") return true
@@ -107,6 +136,7 @@ export function RoaDataTable({
           row.original.route.toLowerCase().includes(filter) ||
           (row.original.asn !== null && String(row.original.asn).includes(filter))
       },
+      sortFn: (rowA, rowB) => compareRouteCidrs(rowA.original.route, rowB.original.route),
     }),
     columnHelper.accessor("maxLength", {
       header: ({ column }) => <SortableHeader column={column} label="最大长度" />,
@@ -142,12 +172,16 @@ export function RoaDataTable({
       enableSorting: false,
       cell: ({ getValue }) => <span className="font-mono text-xs">{getValue()}</span>,
     }),
-    columnHelper.accessor((record) => new Date(record.updatedAt).getTime(), {
+    columnHelper.accessor("updatedAt", {
       id: "updatedAt",
-      header: ({ column }) => <SortableHeader column={column} label="最后更新（UTC）" />,
+      header: ({ column }) => <SortableHeader column={column} label="最后更新" />,
       cell: ({ row }) => (
-        <time className="font-mono text-xs" dateTime={row.original.updatedAt}>
-          {formatUpdatedAt(row.original.updatedAt)}
+        <time
+          className="font-mono text-xs"
+          dateTime={isoDateTime(row.original.updatedAt)}
+          title={hasHydrated ? fullLocalDateTime(row.original.updatedAt) || undefined : undefined}
+        >
+          {formatUpdatedAt(row.original.updatedAt, hasHydrated)}
         </time>
       ),
     }),

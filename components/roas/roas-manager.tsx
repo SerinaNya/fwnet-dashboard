@@ -191,7 +191,7 @@ export function RoasManager() {
       ? createRoa({
           uuid: crypto.randomUUID(),
           ...fields,
-          updatedAt: new Date().toISOString(),
+          updatedAt: Date.now(),
         })
       : editingRoa
         ? saveRoa({ ...editingRoa, ...fields })

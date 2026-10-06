@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import {
   columnFilteringFeature,
   columnVisibilityFeature,
@@ -59,11 +59,35 @@ const features = tableFeatures({
 
 const columnHelper = createColumnHelper<typeof features, AsnRecord>()
 
-function formatUpdatedAt(value: string) {
+const subscribeToHydration = () => () => {}
+const getClientHydration = () => true
+const getServerHydration = () => false
+
+function formatUpdatedAt(value: number) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ""
 
-  return `${date.toISOString().slice(0, 10)} ${date.toISOString().slice(11, 16)}`
+  const pad = (part: number) => String(part).padStart(2, "0")
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`
+}
+
+function isoDateTime(value: number) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString()
+}
+
+function formatLocalUpdatedAt(value: number) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+
+  const pad = (part: number) => String(part).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function fullLocalDateTime(value: number) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return date.toLocaleString(undefined, { dateStyle: "full", timeStyle: "long" })
 }
 
 function geographicLocation(record: AsnRecord) {
@@ -99,6 +123,11 @@ export function AsnDataTable({
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [asnQuery, setAsnQuery] = useState("")
+  const hasHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydration,
+    getServerHydration
+  )
   const asnFilter = columnFilters.find((filter) => filter.id === "asn")?.value
   const rowCount = data.filter(
     (record) => asnFilter == null || String(record.asn).includes(String(asnFilter))
@@ -194,14 +223,20 @@ export function AsnDataTable({
         </div>
       ),
     }),
-    columnHelper.accessor((record) => new Date(record.updatedAt).getTime(), {
+    columnHelper.accessor("updatedAt", {
       id: "updatedAt",
       header: ({ column }) => (
-        <SortableHeader column={column} label="最后更新（UTC）" />
+        <SortableHeader column={column} label="最后更新" />
       ),
       cell: ({ row }) => (
-        <time className="font-mono text-xs" dateTime={row.original.updatedAt}>
-          {formatUpdatedAt(row.original.updatedAt)}
+        <time
+          className="font-mono text-xs"
+          dateTime={isoDateTime(row.original.updatedAt)}
+          title={hasHydrated ? fullLocalDateTime(row.original.updatedAt) || undefined : undefined}
+        >
+          {hasHydrated
+            ? formatLocalUpdatedAt(row.original.updatedAt)
+            : formatUpdatedAt(row.original.updatedAt)}
         </time>
       ),
     }),
