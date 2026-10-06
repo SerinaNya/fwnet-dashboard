@@ -29,7 +29,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - GET and successful POST return `{ error: null, data: snapshot }`. Provider requests are serialized; keep writes asynchronous and update UI only after server success.
 - Authorization is derived server-side from the imported current-maintainer UUID (SerinaNya), not submitted `canEdit`/`isMine`. OIDC is not implemented; `isAdmin` is currently false and maintainer source changes are not accepted.
 - ASN–maintainer links are many-to-many by UUID; imported ASNs may have no links. ROA ASN may be `null` for unallocated routes; never substitute ASN 0. Referenced ASNs cannot be deleted.
-- Route canonicalization, host-bit rejection and Max Length bounds exist in both client validation and `lib/server/route-cidr.mjs` / store validation. Keep server checks authoritative when changing rules.
+- The server canonicalizes CIDRs, rejects host bits and enforces Max Length bounds in `lib/server/route-cidr.mjs` / store validation; client form checks are partial and do not replace these checks.
+- Network `updatedAt` values are integer Unix epoch milliseconds in SQLite and numeric API fields, not seconds or ISO strings. Writes use server `Date.now()`; import normalizes supported ISO timestamps. The v2 migration preserves existing instants and millisecond precision.
 - `DATABASE_PATH` defaults to `data/fwnet.sqlite`. Never reset or test destructively against it; use a temporary database for verification.
 - Initialization: `pnpm db:migrate`; import a converted JSON dataset only when explicitly requested, using its external path (for example `pnpm db:import -- /path/to/network.json`). Same-file reimport is a no-op; a different import into a nonempty database is rejected. Never infer missing owners from descriptions, and interpret source timestamps as UTC+8.
 - Schema upgrades belong in `lib/server/migrations/` and require updating migration dispatch/version in `database.mjs`; opening the database applies pending migrations but does not seed data.
@@ -42,5 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Base UI Combobox label/search and submitted value are separate: UUID-valued maintainer choices must filter by name. `itemToStringValue` alone does not fix name search.
 - `CardHeader` is Grid; use `CardAction` for right-aligned controls. `flex-row` alone does not change its display type.
 - Business UI copy is Chinese. ASN displays as digits without `AS`; internal UUIDs are not displayed. Empty table fields stay blank; tables are unpaginated by default.
+- ASN/ROA timestamps display in the browser's local timezone. Keep server/initial hydration output stable (`useSyncExternalStore` is used), then format locally; HTML `time.dateTime` remains ISO and sorting compares epoch numbers.
+- ROA CIDR sorting uses `lib/route-sort.ts`: address family (IPv4 first), numeric address, then prefix length. Do not replace it with lexical sorting of route strings.
 - All field changes belong in modals. Keep compact icon actions from increasing row height; do not equalize rows by adding tall placeholders. Use semantic theme colors for headers and unallocated rows.
 - Sidebar business entries are maintained in `components/app-sidebar.tsx`; Settings, Get Help and the placeholder user menu are intentionally retained.
