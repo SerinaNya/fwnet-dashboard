@@ -14,7 +14,7 @@ export type AsnRecord = {
   subdivisionCode: string
   descr: string
   remark: string
-  updatedAt: string
+  updatedAt: number
 }
 
 export type RoaRecord = {
@@ -26,7 +26,7 @@ export type RoaRecord = {
   remark: string
   countryCode: string
   subdivisionCode: string
-  updatedAt: string
+  updatedAt: number
 }
 
 export const initialMaintainers: Maintainer[] = [
@@ -56,7 +56,7 @@ export const initialAsns: AsnRecord[] = [
     subdivisionCode: "SH",
     descr: "FWNET-SHARED",
     remark: "",
-    updatedAt: "2025-01-15T08:00:00.000Z",
+    updatedAt: 1736928000000,
   },
   {
     asn: 64513,
@@ -65,7 +65,7 @@ export const initialAsns: AsnRecord[] = [
     subdivisionCode: "",
     descr: "FWNET-READONLY",
     remark: "",
-    updatedAt: "2025-01-15T08:00:00.000Z",
+    updatedAt: 1736928000000,
   },
   {
     asn: 64514,
@@ -74,7 +74,7 @@ export const initialAsns: AsnRecord[] = [
     subdivisionCode: "",
     descr: "FWNET-PRIVATE",
     remark: "",
-    updatedAt: "2025-01-15T08:00:00.000Z",
+    updatedAt: 1736928000000,
   },
 ]
 
@@ -88,7 +88,7 @@ export const initialRoas: RoaRecord[] = [
     remark: "",
     countryCode: "CN",
     subdivisionCode: "SH",
-    updatedAt: "2025-01-15T08:00:00.000Z",
+    updatedAt: 1736928000000,
   },
   {
     uuid: "roa-2001-db8-64513",
@@ -99,7 +99,7 @@ export const initialRoas: RoaRecord[] = [
     remark: "只读 ASN 示例",
     countryCode: "CN",
     subdivisionCode: "",
-    updatedAt: "2025-01-15T08:00:00.000Z",
+    updatedAt: 1736928000000,
   },
 ]
 
